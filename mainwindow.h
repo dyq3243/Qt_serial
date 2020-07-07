@@ -6,6 +6,9 @@
 #include <QMenuBar>
 #include <QAction>
 #include <QKeySequence>
+#include <QFileDialog>
+#include <QFileDevice>
+#include "text.h"
 
 namespace Ui {
 class MainWindow;
@@ -26,6 +29,8 @@ private:
     Ui::MainWindow *ui;
 
     void addmenu(void);
+
+    QTextEdit *textedit;
 
     /*菜单栏*/
     QMenu *file;

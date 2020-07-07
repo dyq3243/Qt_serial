@@ -1,24 +1,56 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "text.h"
 #include <QDebug>
+#include <QString>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    setFixedSize(320,400);
+    setFixedSize(640,720);
 
+    textedit = new QTextEdit(this);
+    textedit->setGeometry(210,40,420,440);
+    textedit->setStyleSheet("QTextEdit{background-color: black}"
+                        "QTextEdit{color:white}"
+                        "QTextEdit{font: 10pt ""Arial;}"
+                        );
+
+    //菜单栏
     addmenu();
-
 
 
 }
 
 void MainWindow::openslot()
 {
-    qDebug()<<"open file";
+    QString fileformat = "All file(*);;"
+                         "Text file(*.txt);;"
+                         "C/C++ source file(*.c *.cpp);;"
+                         "C/C++ head file(*.h)";
+
+    QString filename = QFileDialog::getOpenFileName(this,"open","/",fileformat);
+    qDebug()<<filename;
+    if( !filename.isEmpty() )
+    {
+        QFile fp(filename);
+        if(fp.open(QIODevice::ReadOnly))
+        {
+            QTextStream input(&fp);
+            input.setCodec("UTF-8");
+
+            while(1)
+            {
+                QString txt;
+                input>>txt;
+                if( txt.isEmpty() )
+                    break;
+                textedit->insertPlainText(txt);
+            }
+        }
+    }
+
 }
 
 void MainWindow::addmenu(void)

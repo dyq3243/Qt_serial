@@ -2,6 +2,7 @@
 #define TEXT_H
 
 #include <QWidget>
+#include <QTextEdit>
 
 class text : public QWidget
 {
@@ -12,6 +13,9 @@ public:
 signals:
 
 public slots:
+
+private:
+
 };
 
 #endif // TEXT_H
