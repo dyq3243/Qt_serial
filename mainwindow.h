@@ -6,9 +6,12 @@
 #include <QMenuBar>
 #include <QAction>
 #include <QKeySequence>
+#include "text.h"
+#include <QFile>
 #include <QFileDialog>
 #include <QFileDevice>
-#include "text.h"
+#include <QtSerialPort/QSerialPort>
+#include <QtSerialPort/QSerialPortInfo>
 
 namespace Ui {
 class MainWindow;
@@ -24,13 +27,27 @@ public:
 
 private slots:
     void openslot(void);
+    void buildslot(void);
+    void saveslot(void);
+    void save_atslot(void);
+
+    void beginslot(void);
+    void stopslot(void);
+    void breakenslot(void);
+    void btchangedslot(int);
+
+    void serial_read_slot(void);
+
+    void on_send_btn_clicked();
 
 private:
     Ui::MainWindow *ui;
 
     void addmenu(void);
+    void serial_init(void);
 
-    QTextEdit *textedit;
+    QTextEdit *text;
+    QSerialPort serial;
 
     /*菜单栏*/
     QMenu *file;
@@ -41,7 +58,7 @@ private:
     /*文件动作*/
     QAction *open;
     QAction *build;
-    QAction *close;
+    QAction *closed;
     QAction *save;
     QAction *save_at;
     /*编辑动作*/

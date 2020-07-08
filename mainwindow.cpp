@@ -2,56 +2,139 @@
 #include "ui_mainwindow.h"
 #include <QDebug>
 #include <QString>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    setFixedSize(640,720);
+    setFixedSize(400,480);
+    setWindowTitle("Serial");
 
-    textedit = new QTextEdit(this);
-    textedit->setGeometry(210,40,420,440);
-    textedit->setStyleSheet("QTextEdit{background-color: black}"
-                        "QTextEdit{color:white}"
-                        "QTextEdit{font: 10pt ""Arial;}"
-                        );
+    text = new QTextEdit(this);
+    text->setGeometry(175,50,220,300);
+    text->setStyleSheet("QTextEdit{background-color:black}"
+                        "QTextEdit{color:white}");
+    text->setReadOnly(true);
 
-    //菜单栏
     addmenu();
+    serial_init();
+
+}
+
+void MainWindow::serial_init()
+{
+    QString com;
+    QSerialPortInfo serial;
+
+    com = serial.portName();
+    qDebug() << "name:" <<com;
+
+    com = serial.systemLocation();
+    qDebug() << "\npc:" << com;
+
+    com = serial.serialNumber();
+    qDebug() << "\nnum:" << com;
+
+    if( com.isEmpty() )
+        QMessageBox::information(this,"serial link","have not serialCOM");
+
+    //connect(&serial,&QSerialPort::readyRead,this,&MainWindow::serial_read_slot);
 
 
+}
+
+
+
+MainWindow::~MainWindow()
+{
+    delete ui;
 }
 
 void MainWindow::openslot()
 {
     QString fileformat = "All file(*);;"
-                         "Text file(*.txt);;"
-                         "C/C++ source file(*.c *.cpp);;"
+                         "Text file(*.text);;"
+                         "C/C++ source file(*.c);;"
                          "C/C++ head file(*.h)";
+    QString filename = QFileDialog::getOpenFileName(this,"open file","/",fileformat);
 
-    QString filename = QFileDialog::getOpenFileName(this,"open","/",fileformat);
-    qDebug()<<filename;
     if( !filename.isEmpty() )
     {
-        QFile fp(filename);
-        if(fp.open(QIODevice::ReadOnly))
+        QFile file(filename);
+        if(file.open(QFileDevice::ReadOnly))
         {
-            QTextStream input(&fp);
-            input.setCodec("UTF-8");
+            QTextStream input(&file);
+            QString txt;
 
+            input.setCodec("UTF-8");
             while(1)
             {
-                QString txt;
                 input>>txt;
-                if( txt.isEmpty() )
+                if(txt.isEmpty())
                     break;
-                textedit->insertPlainText(txt);
+                text->insertPlainText(txt);
             }
+            file.close();
         }
     }
-
 }
+
+void MainWindow::buildslot()
+{
+    text->setText(NULL);
+}
+
+void MainWindow::saveslot()
+{
+    QString fileformat = "Text file(*.text);;"
+                         "C/C++ source file(*.c);;"
+                         "C/C++ head file(*.h);;"
+                         "All file(*)";
+    QString filename = QFileDialog::getSaveFileName(this,"save file","/Qt",fileformat);
+    if(filename.isEmpty())
+    {
+        QMessageBox::warning(this,"save file","the text save failed!");
+    }
+    QFile file(filename);
+    if(file.open(QIODevice::WriteOnly))
+    {
+        QTextStream output(&file);
+        output.setCodec("UTF-8");
+
+        QString txt = text->toPlainText();
+        output << txt;
+        QMessageBox::information(this,"save","the text save to"+filename);
+        file.close();
+    }
+}
+
+void MainWindow::save_atslot()
+{
+    QString fileformat = "Text file(*.text);;"
+                         "C/C++ source file(*.c);;"
+                         "C/C++ head file(*.h);;"
+                         "All file(*)";
+    QString filename = QFileDialog::getSaveFileName(this,"save file","/",fileformat);
+    if(filename.isEmpty())
+    {
+        QMessageBox::warning(this,"save as file","the text save failed!");
+    }
+    QFile file(filename);
+    if(file.open(QIODevice::WriteOnly))
+    {
+        QTextStream output(&file);
+        output.setCodec("UTF-8");
+
+        QString txt = text->toPlainText();
+        output << txt;
+        QMessageBox::information(this,"save as","the text save to"+filename);
+        file.close();
+    }
+}
+
+
 
 void MainWindow::addmenu(void)
 {
@@ -82,10 +165,10 @@ void MainWindow::addmenu(void)
     save_at->setStatusTip("save a file at...");
     file->addAction(save_at);
 
-    close = new QAction("&关闭",this);
-    close->setShortcut(QKeySequence::Close);
-    close->setStatusTip("close a file");
-    file->addAction(close);
+    closed = new QAction("&关闭",this);
+    closed->setShortcut(QKeySequence::Close);
+    closed->setStatusTip("close a file");
+    file->addAction(closed);
 
     /*添加edit动作*/
     begin = new QAction("开始",this);
@@ -94,8 +177,8 @@ void MainWindow::addmenu(void)
     stop = new QAction("暂停",this);
     edit->addAction(stop);
 
-    close = new QAction("关闭",this);
-    edit->addAction(close);
+    breaken = new QAction("断开",this);
+    edit->addAction(breaken);
 
     /*添加工具动作*/
     set = new QAction("设置",this);
@@ -105,12 +188,128 @@ void MainWindow::addmenu(void)
     about = new QAction("关于",this);
     help->addAction(about);
 
-    /*绑定菜单栏*/
+    /*绑定文件动作*/
     connect(open,SIGNAL(triggered(bool)),this,SLOT(openslot()));
+    connect(build,SIGNAL(triggered(bool)),this,SLOT(buildslot()));
+    connect(save,SIGNAL(triggered(bool)),this,SLOT(saveslot()));
+    connect(save_at,SIGNAL(triggered(bool)),this,SLOT(save_atslot()));
+    connect(closed,SIGNAL(triggered(bool)),this,SLOT(close()));
+
+    /*绑定编辑动作*/
+    connect(begin,SIGNAL(triggered(bool)),this,SLOT(beginslot()));
+    connect(stop,SIGNAL(triggered(bool)),this,SLOT(stopslot()));
+    connect(breaken,SIGNAL(triggered(bool)),this,SLOT(breakenslot()));
+    connect(ui->bt_box,SIGNAL(currentIndexChanged(int)),this,SLOT(btchangedslot(int)));
+}
+
+void MainWindow::btchangedslot(int dex)
+{
+    if(dex == 5)
+        ui->bt_box->setEditable(true);
+}
+
+void MainWindow::beginslot()
+{
+    QString com = ui->serial_box->currentText();
+    QString bt = ui->bt_box->currentText();
+    QString data = ui->data_box->currentText();
+    QString check = ui->check_box->currentText();
+    QString stop = ui->stop_box->currentText();
+    QString stream = ui->stram_box->currentText();
+
+
+    serial.setPortName(com);
+    serial.setBaudRate(bt.toInt());
+
+    switch (data.toInt()) {
+    case 5:
+        serial.setDataBits(QSerialPort::Data5);
+        break;
+    case 6:
+        serial.setDataBits(QSerialPort::Data6);
+        break;
+    case 7:
+        serial.setDataBits(QSerialPort::Data7);
+        break;
+    case 8:
+        serial.setDataBits(QSerialPort::Data8);
+        break;
+    default:
+        break;
+    }
+
+    if(check == "None")
+        serial.setParity(QSerialPort::NoParity);
+    else if(check == "Even")
+        serial.setParity(QSerialPort::EvenParity);
+    else if(check == "Odd")
+        serial.setParity(QSerialPort::OddParity);
+    else if(check == "Space")
+        serial.setParity(QSerialPort::SpaceParity);
+    else if(check == "Mark")
+        serial.setParity(QSerialPort::MarkParity);
+
+    if(stop == "1.5")
+        serial.setStopBits(QSerialPort::OneAndHalfStop);
+    else
+        switch (stop.toInt()) {
+        case 1:
+            serial.setStopBits(QSerialPort::OneStop);
+            break;
+        case 2:
+            serial.setStopBits(QSerialPort::TwoStop);
+            break;
+        default:
+            break;
+        }
+
+    if(stream == "None")
+        serial.setFlowControl(QSerialPort::NoFlowControl);
+    else if(stream == "RTS/CTS")
+        serial.setFlowControl(QSerialPort::HardwareControl);
+    else if(stream == "XON/XOFF")
+        serial.setFlowControl(QSerialPort::SoftwareControl);
+
+    if(serial.open(QIODevice::ReadWrite))
+    {
+        ui->serial_box->setEnabled(false);
+        ui->bt_box->setEnabled(false);
+        ui->check_box->setEnabled(false);
+        ui->data_box->setEnabled(false);
+        ui->stop_box->setEnabled(false);
+        ui->stram_box->setEnabled(false);
+    }
+
 }
 
 
-MainWindow::~MainWindow()
+void MainWindow::serial_read_slot()
 {
-    delete ui;
+    QByteArray buf;
+    buf = serial.readAll();
+
+    text->append(buf);
+
+}
+
+void MainWindow::stopslot()
+{
+    //disconnect(&serial,&QSerialPort::readyRead,this,&QIODevice::readData);
+}
+
+void MainWindow::breakenslot()
+{
+    serial.clear();
+    serial.close();
+    ui->serial_box->setEnabled(true);
+    ui->bt_box->setEnabled(true);
+    ui->check_box->setEnabled(true);
+    ui->data_box->setEnabled(true);
+    ui->stop_box->setEnabled(true);
+    ui->stram_box->setEnabled(true);
+}
+
+void MainWindow::on_send_btn_clicked()
+{
+
 }

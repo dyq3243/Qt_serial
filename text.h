@@ -13,9 +13,6 @@ public:
 signals:
 
 public slots:
-
-private:
-
 };
 
 #endif // TEXT_H
