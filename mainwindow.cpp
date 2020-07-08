@@ -25,22 +25,21 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::serial_init()
 {
-    QString com;
-    QSerialPortInfo serial;
+//    QString com;
 
-    com = serial.portName();
-    qDebug() << "name:" <<com;
+//    com = serial.portName();
+//   qDebug() << "name:" <<com;
 
-    com = serial.systemLocation();
-    qDebug() << "\npc:" << com;
+//    com = serial.systemLocation();
+//    qDebug() << "\npc:" << com;
 
-    com = serial.serialNumber();
-    qDebug() << "\nnum:" << com;
+//    com = serial.serialNumber();
+//    qDebug() << "\nnum:" << com;
 
-    if( com.isEmpty() )
-        QMessageBox::information(this,"serial link","have not serialCOM");
+//    if( com.isEmpty() )
+//        QMessageBox::information(this,"serial link","have not serialCOM");
 
-    //connect(&serial,&QSerialPort::readyRead,this,&MainWindow::serial_read_slot);
+    connect(&serial,&QSerialPort::readyRead,this,&MainWindow::serial_read_slot);
 
 
 }
