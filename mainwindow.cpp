@@ -3,19 +3,20 @@
 #include <QDebug>
 #include <QString>
 #include <QMessageBox>
+#include <QList>
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    setFixedSize(400,480);
+    setFixedSize(640,720);
     setWindowTitle("Serial");
 
     text = new QTextEdit(this);
-    text->setGeometry(175,50,220,300);
-    text->setStyleSheet("QTextEdit{background-color:black}"
-                        "QTextEdit{color:white}");
+    text->setGeometry(320,40,310,565);
+
     text->setReadOnly(true);
 
     addmenu();
@@ -23,25 +24,29 @@ MainWindow::MainWindow(QWidget *parent) :
 
 }
 
+/*串口初始化*/
 void MainWindow::serial_init()
 {
-//    QString com;
+    if(serial.isOpen())
+        return;
 
-//    com = serial.portName();
-//   qDebug() << "name:" <<com;
-
-//    com = serial.systemLocation();
-//    qDebug() << "\npc:" << com;
-
-//    com = serial.serialNumber();
-//    qDebug() << "\nnum:" << com;
-
-//    if( com.isEmpty() )
-//        QMessageBox::information(this,"serial link","have not serialCOM");
+    serialinfo = QSerialPortInfo::availablePorts();
+    qDebug() << "可用串口数:" << serialinfo.count();
+    if(serialinfo.count())
+    {
+        ui->serial_box->clear();
+        ui->serial_box->setStyleSheet("QComboBox{color:red}");
+        for(const QSerialPortInfo &serialport : serialinfo)
+        {
+            QStringList list;
+            list << serialport.portName();
+            ui->serial_box->addItem(list.first(),list);
+        }
+    }
+    else
+        breakenslot();
 
     connect(&serial,&QSerialPort::readyRead,this,&MainWindow::serial_read_slot);
-
-
 }
 
 
@@ -51,6 +56,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+/*打开文件对话框槽函数*/
 void MainWindow::openslot()
 {
     QString fileformat = "All file(*);;"
@@ -85,6 +91,7 @@ void MainWindow::buildslot()
     text->setText(NULL);
 }
 
+/*保存窗口数据为文件槽函数*/
 void MainWindow::saveslot()
 {
     QString fileformat = "Text file(*.text);;"
@@ -109,6 +116,7 @@ void MainWindow::saveslot()
     }
 }
 
+/*另存为槽函数*/
 void MainWindow::save_atslot()
 {
     QString fileformat = "Text file(*.text);;"
@@ -134,7 +142,13 @@ void MainWindow::save_atslot()
 }
 
 
+/*获取时间*/
+QDateTime MainWindow::gettime()
+{
+    return QDateTime::currentDateTime();
+}
 
+/*添加菜单栏*/
 void MainWindow::addmenu(void)
 {
     /*添加菜单*/
@@ -187,6 +201,29 @@ void MainWindow::addmenu(void)
     about = new QAction("关于",this);
     help->addAction(about);
 
+    /*radio默认选项*/
+    ui->rx_asc_radio->setChecked(true);
+    ui->send_asc_radio->setChecked(true);
+
+    /*发送记录框*/
+    ui->send_text_history->setMaxCount(10);
+
+    /*状态栏*/
+    sta = new QLabel("CLOSE  ",this);
+    sta->setStyleSheet("QLabel{color:red}");
+    statusBar()->addWidget(sta);
+
+    time_label = new QLabel(gettime().toString("  yyyy年MM月dd日 hh时mm分ss秒 ddd"));
+
+    time_label->setMinimumSize(time_label->sizeHint());
+    time_label->setAlignment(Qt::AlignRight);
+
+    statusBar()->addWidget(time_label);
+
+    /*工具栏*/
+    QToolBar *toolbar = new QToolBar("&file");
+    toolbar->addAction(build);
+
     /*绑定文件动作*/
     connect(open,SIGNAL(triggered(bool)),this,SLOT(openslot()));
     connect(build,SIGNAL(triggered(bool)),this,SLOT(buildslot()));
@@ -199,14 +236,17 @@ void MainWindow::addmenu(void)
     connect(stop,SIGNAL(triggered(bool)),this,SLOT(stopslot()));
     connect(breaken,SIGNAL(triggered(bool)),this,SLOT(breakenslot()));
     connect(ui->bt_box,SIGNAL(currentIndexChanged(int)),this,SLOT(btchangedslot(int)));
+
 }
 
+/*自定义波特率槽函数*/
 void MainWindow::btchangedslot(int dex)
 {
     if(dex == 5)
         ui->bt_box->setEditable(true);
 }
 
+/*开启连接槽函数*/
 void MainWindow::beginslot()
 {
     QString com = ui->serial_box->currentText();
@@ -271,6 +311,8 @@ void MainWindow::beginslot()
 
     if(serial.open(QIODevice::ReadWrite))
     {
+        sta->setText("OPEN  ");
+
         ui->serial_box->setEnabled(false);
         ui->bt_box->setEnabled(false);
         ui->check_box->setEnabled(false);
@@ -278,28 +320,44 @@ void MainWindow::beginslot()
         ui->stop_box->setEnabled(false);
         ui->stram_box->setEnabled(false);
     }
+    else
+    {
+        QMessageBox::warning(this,"Notice","open "+ui->serial_box->currentText()+" false");
+    }
 
 }
 
 
+/*读取串口数据槽函数*/
 void MainWindow::serial_read_slot()
 {
-    QByteArray buf;
-    buf = serial.readAll();
+    QByteArray temp = serial.readAll();
+    qDebug()<<temp;
 
-    text->append(buf);
+    /*二进制 or 十六进制*/
+//    QByteArray Asc = QByteArray::number(temp,2);
 
+//    if( ui->rx_hex_radio->isChecked() )
+//        Asc = QByteArray::number(temp,16);
+    /*显示时间*/
+    if(ui->time_check->isChecked())
+        text->append(gettime().toString("hh.mm.ss") + ":");
+
+    text->append(temp);
 }
 
+/*暂停显示数据槽函数*/
 void MainWindow::stopslot()
 {
-    //disconnect(&serial,&QSerialPort::readyRead,this,&QIODevice::readData);
+    disconnect(&serial,&QSerialPort::readyRead,this,&MainWindow::serial_read_slot);
 }
 
+/*断开串口连接槽函数*/
 void MainWindow::breakenslot()
 {
     serial.clear();
     serial.close();
+    ui->serial_box->setStyleSheet("QComboBox{color:black}");
     ui->serial_box->setEnabled(true);
     ui->bt_box->setEnabled(true);
     ui->check_box->setEnabled(true);
@@ -308,7 +366,72 @@ void MainWindow::breakenslot()
     ui->stram_box->setEnabled(true);
 }
 
-void MainWindow::on_send_btn_clicked()
+/*发送串口数据槽函数*/
+void MainWindow::on_open_file_btn_clicked()
 {
+    QString buf = ui->send_text->toPlainText();
 
+    /*显示时间*/
+    if(ui->time_check->isChecked())
+        text->append(gettime().toString("hh.mm.ss") + ":");
+
+    /*16进制*/
+    if(ui->send_hex_radio->isChecked())
+    {
+        QByteArray Hex = buf.toLatin1();
+        Hex = QByteArray::fromHex(Hex);
+        Hex = Hex.toHex();
+        serial.write(Hex);
+
+        /*显示发送*/
+        if(ui->send_check->isChecked())
+            text->append(Hex);
+    }
+    else
+    {
+        /*二进制*/
+        int temp = buf.toInt();
+        QByteArray Asc = QByteArray::number(temp,2);
+        serial.write(Asc);
+
+        /*显示发送*/
+        if(ui->send_check->isChecked())
+            text->append(Asc);
+    }
+
+    ui->send_text_history->addItem(buf);
+    if(ui->send_text_history->count() == 10)
+        ui->send_text_history->clear();
+}
+
+void MainWindow::on_send_text_history_currentTextChanged(const QString &arg1)
+{
+    if(ui->send_text_history->currentText() == NULL)
+        return;
+    ui->send_text->setText(ui->send_text_history->currentText());
+}
+
+void MainWindow::timerEvent(QTimerEvent *event)
+{
+    if(event->timerId() == time1)
+    {
+        time_label->setText(gettime().toString("  yyyy年MM月dd日 hh时mm分ss秒 ddd"));
+        //serial_init();
+
+    }
+    if(event->timerId() == time2)
+        on_open_file_btn_clicked();
+}
+
+void MainWindow::on_send_check_2_stateChanged(int arg1)
+{
+    if(ui->send_check_2->isChecked())
+        time2 = startTimer(ui->send_check_time->text().toInt());
+    else
+    {
+        if(time2 == 0)
+            return;
+        killTimer(time2);
+        time2 = 0;
+    }
 }
