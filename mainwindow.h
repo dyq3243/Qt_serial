@@ -19,6 +19,10 @@
 #include <QtSerialPort/QSerialPortInfo>
 #include <QDateTime>
 #include <QTimer>
+#include <QSound>
+#include <QSoundEffect>
+
+#include <QMediaPlayer>
 
 namespace Ui {
 class MainWindow;
@@ -42,15 +46,17 @@ private slots:
     void stopslot(void);
     void breakenslot(void);
     void btchangedslot(int);
+    void aboutslot(void);
 
     void serial_read_slot(void);
-
     void on_open_file_btn_clicked();
 
     void timerEvent(QTimerEvent *event);
 
-    void on_send_text_history_currentTextChanged(const QString &arg1);
+    void playmusic(void);
+    void stopmusic(void);
 
+    void on_send_text_history_currentTextChanged(const QString &arg1);
     void on_send_check_2_stateChanged(int arg1);
 
 private:
@@ -65,6 +71,8 @@ private:
     QLabel *sta;
     QLabel *time_label;
     QList<QSerialPortInfo> serialinfo;
+    QSound *player;
+    QMediaPlayer play1;
 
     int time1 = startTimer(1000);
     int time2 = 0;
@@ -87,6 +95,7 @@ private:
     QAction *breaken;
     /*工具动作*/
     QAction *set;
+    QAction *close_music;
     /*帮助动作*/
     QAction *about;
 };

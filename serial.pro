@@ -5,8 +5,6 @@
 #-------------------------------------------------
 
 QT       += core gui
-QT       += serialport
-QT       += core
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -38,3 +36,10 @@ FORMS += \
         mainwindow.ui
 CONFIG += c++11
 
+RESOURCES += \
+    icon/icon.qrc \
+    music/music.qrc
+
+QT       += serialport
+QT       += core
+QT       += multimedia

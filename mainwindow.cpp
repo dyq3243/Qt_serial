@@ -194,8 +194,10 @@ void MainWindow::addmenu(void)
     edit->addAction(breaken);
 
     /*添加工具动作*/
-    set = new QAction("设置",this);
+    set = new QAction("播放",this);
+    close_music = new QAction("停止",this);
     tool->addAction(set);
+    tool->addAction(close_music);
 
     /*添加帮助动作*/
     about = new QAction("关于",this);
@@ -224,6 +226,25 @@ void MainWindow::addmenu(void)
     QToolBar *toolbar = new QToolBar("&file");
     toolbar->addAction(build);
 
+    /*添加图片*/
+    file->setIcon(QIcon(":/文件.png"));
+    edit->setIcon(QIcon(":/修改.png"));
+    help->setIcon(QIcon(":/帮助"));
+    tool->setIcon(QIcon(":/工具箱"));
+
+    build->setIcon(QIcon(":/删除"));
+    open->setIcon(QIcon(":/输入"));
+    save->setIcon(QIcon(":/保存"));
+    save_at->setIcon(QIcon(":/另存"));
+    closed->setIcon(QIcon(":/关闭"));
+
+    begin->setIcon(QIcon(":/成功"));
+    stop->setIcon(QIcon(":/暂停"));
+    breaken->setIcon(QIcon(":/拒绝"));
+
+    set->setIcon(QIcon(":/播放"));
+    close_music->setIcon(QIcon(":/关闭"));
+
     /*绑定文件动作*/
     connect(open,SIGNAL(triggered(bool)),this,SLOT(openslot()));
     connect(build,SIGNAL(triggered(bool)),this,SLOT(buildslot()));
@@ -237,6 +258,28 @@ void MainWindow::addmenu(void)
     connect(breaken,SIGNAL(triggered(bool)),this,SLOT(breakenslot()));
     connect(ui->bt_box,SIGNAL(currentIndexChanged(int)),this,SLOT(btchangedslot(int)));
 
+    connect(about,SIGNAL(triggered(bool)),this,SLOT(aboutslot()));
+    connect(set,SIGNAL(triggered(bool)),this,SLOT(playmusic()));
+    connect(close_music,SIGNAL(triggered(bool)),this,SLOT(stopmusic()));
+
+}
+
+void MainWindow::playmusic()
+{
+    player->play("E:\\l.wav");
+//    play1.setMedia(QUrl::fromLocalFile("E:\\a.mp3"));
+//    play1.setVolume(30);
+//    play1.play();
+}
+
+void MainWindow::stopmusic()
+{
+    player->stop();
+}
+
+void MainWindow::aboutslot()
+{
+    QMessageBox::about(this,"About","我是你永远的爹");
 }
 
 /*自定义波特率槽函数*/
@@ -312,7 +355,6 @@ void MainWindow::beginslot()
     if(serial.open(QIODevice::ReadWrite))
     {
         sta->setText("OPEN  ");
-
         ui->serial_box->setEnabled(false);
         ui->bt_box->setEnabled(false);
         ui->check_box->setEnabled(false);
@@ -357,6 +399,7 @@ void MainWindow::breakenslot()
 {
     serial.clear();
     serial.close();
+    sta->setText("CLOSE  ");
     ui->serial_box->setStyleSheet("QComboBox{color:black}");
     ui->serial_box->setEnabled(true);
     ui->bt_box->setEnabled(true);
